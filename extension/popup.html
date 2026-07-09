@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=400" />
+  <title>Once</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div id="app">
+  <header class="hd">
+    <div class="brand">
+      <span class="logo">Once</span>
+      <span class="tag">Fill it once. It speaks for you forever.</span>
+    </div>
+    <div id="backendDot" class="bdot" title="backend status"></div>
+  </header>
+
+  <!-- VAULT -->
+  <section class="card" id="vaultCard">
+    <div class="card-row">
+      <div>
+        <div class="card-title">Your vault</div>
+        <div class="muted" id="vaultStatus">empty — nothing saved yet</div>
+      </div>
+      <button class="btn ghost" id="editVaultBtn">Edit</button>
+    </div>
+    <div class="vault-actions">
+      <button class="btn" id="demoBtn">Load demo persona (Amara)</button>
+    </div>
+    <div class="intake hidden" id="intakeBox">
+      <textarea id="intakeText" rows="4" placeholder="Tell Once about yourself in plain language — name, date of birth, address, who you live with…"></textarea>
+      <div class="right"><button class="btn small" id="saveIntakeBtn">Save to vault</button></div>
+    </div>
+  </section>
+
+  <!-- ACTIONS -->
+  <section class="card">
+    <div class="card-title">Meet a form</div>
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      <span class="dz-main">Drop a PDF here or click to choose</span>
+      <span class="muted small">SS-4, 1040, or any fillable PDF form</span>
+    </label>
+    <div class="or">or</div>
+    <button class="btn wide" id="fillPageBtn">Fill the form on this page</button>
+  </section>
+
+  <!-- FORM PANEL -->
+  <section class="card hidden" id="formPanel">
+    <div class="card-row">
+      <div>
+        <div class="card-title" id="formName">Form</div>
+        <div class="muted small" id="fillSummary"></div>
+      </div>
+      <span class="badge" id="autofillBadge"></span>
+    </div>
+    <div class="needeyes" id="needEyes"></div>
+    <div id="reviewList" class="review"></div>
+    <div class="approve-row">
+      <button class="btn primary wide" id="approveBtn">Approve &amp; download filled PDF</button>
+    </div>
+    <div class="receipt hidden" id="receipt"></div>
+  </section>
+
+  <div class="foot muted small">
+    Nothing is final without you. Once never invents facts, and always shows its confidence.
+  </div>
+</div>
+
+<script src="lib/pdf-lib.min.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

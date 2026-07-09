@@ -1,0 +1,12 @@
+# secrets — never commit
+server/.env
+.env
+*.pem
+
+# deps / build
+node_modules/
+demo-forms/node_modules/
+
+# os / editor
+.DS_Store
+*.log

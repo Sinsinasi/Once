@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Riverside Clinic — New Patient Registration</title>
+  <style>
+    body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; color: #14161c; }
+    h1 { font-size: 22px; }
+    .row { margin: 14px 0; display: flex; flex-direction: column; gap: 4px; }
+    label { font-weight: 600; font-size: 14px; }
+    input, select { padding: 9px 10px; border: 1px solid #d5d8df; border-radius: 8px; font-size: 15px; }
+    fieldset { border: 1px solid #e7e9ee; border-radius: 12px; margin: 18px 0; }
+    legend { font-weight: 700; padding: 0 6px; }
+    button { background: #2f6bff; color: #fff; border: 0; border-radius: 8px; padding: 11px 18px; font-size: 15px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Riverside Clinic — New Patient Registration</h1>
+  <p>A plain HTML form to demo Once's live in-page autofill. Open the Once extension and click “Fill the form on this page”.</p>
+
+  <fieldset>
+    <legend>Patient details</legend>
+    <div class="row"><label for="gn">Given name</label><input id="gn" name="given_name" /></div>
+    <div class="row"><label for="fn">Family name</label><input id="fn" name="family_name" /></div>
+    <div class="row"><label for="dob">Date of birth</label><input id="dob" name="dob" placeholder="YYYY-MM-DD" /></div>
+    <div class="row"><label for="occ">Occupation</label><input id="occ" name="occupation" /></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Contact</legend>
+    <div class="row"><label for="street">Street address</label><input id="street" name="street" /></div>
+    <div class="row"><label for="city">City</label><input id="city" name="city" /></div>
+    <div class="row"><label for="zip">Postal code</label><input id="zip" name="zip" /></div>
+    <div class="row"><label for="email">Email</label><input id="email" type="email" name="email" /></div>
+    <div class="row"><label for="phone">Phone</label><input id="phone" name="phone" /></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sensitive</legend>
+    <div class="row"><label for="ssn">Social Security Number</label><input id="ssn" name="ssn" /></div>
+    <div class="row"><label for="ins">Insurance member ID</label><input id="ins" name="insurance_id" /></div>
+  </fieldset>
+
+  <button type="submit">Submit registration</button>
+</body>
+</html>

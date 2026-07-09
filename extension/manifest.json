@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Once — fill it once",
+  "version": "0.1.0",
+  "description": "A browser extension with a memory. Fill your facts once; Once reads any form, understands it, and fills it — you review instead of type.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Once"
+  },
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["http://localhost:8787/*", "<all_urls>"]
+}
