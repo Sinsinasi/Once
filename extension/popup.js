@@ -189,7 +189,9 @@ async function fillCurrentPage() {
     return;
   }
   currentFields = fields;
-  await runMapping(new URL(tab.url).hostname);
+  let title = "this page";
+  try { title = new URL(tab.url).hostname; } catch { /* activeTab may not expose url */ }
+  await runMapping(title);
 }
 
 // ---- shared mapping + review -------------------------------------------------
