@@ -25,11 +25,13 @@ ultifiller/
 ├─ server/           Local Node/Express backend — holds the OpenAI key, does the reasoning
 │  ├─ server.js      /api/intake · /api/map · /api/explain  (+ a keyword fallback)
 │  └─ .env           OPENAI_API_KEY=…   (gitignored, never committed)
-├─ demo-forms/       Generated overlapping AcroForms + real IRS PDFs + a sample web form
-│  ├─ ss4-ein.pdf, f1040-individual.pdf   ← primary demo (share name/address/SSN)
+├─ demo-forms/       Real IRS forms (prepared) + generated forms + a sample web form
+│  ├─ prepared/…                          ← REAL IRS 1040/8822/1041/56/4868, labelled + fillable
+│  ├─ irs/…                               ← the raw IRS downloads
+│  ├─ ss4-ein.pdf, f1040-individual.pdf   ← generated, share name/address/SSN (smooth fallback)
 │  ├─ sample-web-form.html                ← for the live in-page autofill demo
-│  ├─ irs/…                               ← real IRS SS-4/1040/1041/… (fillable AcroForms)
-│  └─ make-demo-forms.js                  ← regenerate the demo forms
+│  ├─ prepare-forms.js                    ← recover field labels by position → tooltips
+│  └─ make-demo-forms.js                  ← regenerate the generated forms
 └─ README.md
 ```
 
@@ -51,32 +53,45 @@ tagged `fallback: true` in the response.
 **1 — backend**
 ```bash
 cd server
-cp .env.example .env      # then put your real OpenAI key in .env
+cp .env.example .env      # then paste your Beyond-the-Form team key into .env
 npm install
 node server.js            # http://localhost:8787
 ```
+The key uses the hackathon proxy (`OPENAI_BASE_URL=https://20.223.175.10.nip.io/v1`,
+model `gpt-5.4-mini`) — both already set in `.env.example`.
 
 **2 — extension**
 1. Open `chrome://extensions` → enable **Developer mode**
 2. **Load unpacked** → select the `extension/` folder
-3. Click the Once icon.
+3. Click the Once icon. The dot top-right is green when the backend is reachable.
 
-**3 — demo**
-1. In the popup → **Load demo persona (Amara)** (a fictional persona — house rules ban real data).
-2. **Drop `demo-forms/ss4-ein.pdf`** → fields fill with traffic lights; SSN is forced
-   red. Tap **?** on any field for a plain-language explanation. **Approve & download**.
-3. **Drop `demo-forms/f1040-individual.pdf`** → the shared fields (name, address, SSN)
-   fill with **zero new input** — the vault reused itself.
+**3 — demo (real IRS forms)**
+1. In the popup → **Load demo persona (Amara)** (fictional — house rules ban real data).
+2. **Drop `demo-forms/prepared/f1040.pdf`** (a real IRS 1040) → the identity block fills
+   with traffic lights; the SSN is forced **red**. Tap **?** on a field for a plain-language
+   explanation. **Approve & download** the filled PDF.
+3. **Drop `demo-forms/prepared/f8822.pdf`** (real IRS Change-of-Address) → name and
+   address fill with **zero new input** — the vault reused itself across two real forms.
 4. Open `demo-forms/sample-web-form.html` → **Fill the form on this page** → live
    in-page autofill with the same confidence colours.
 
+> Smoothest fallback path (tiny forms, instant fill): the generated
+> `demo-forms/ss4-ein.pdf` → `f1040-individual.pdf`, which share name/address/SSN.
+> Other prepared real forms available: `f1041.pdf`, `f56.pdf`, `f4868.pdf`.
+
 ## Scope, honestly
 
-Built as a live prototype: the **data vault**, the **semantic fill engine on real
+Built as a live prototype: the **data vault**, the **semantic fill engine on real IRS
 form fields**, the **traffic-light confidence layer**, the **tap-to-understand
-explainer**, and the **human approval step**. Real IRS PDFs fill mechanically, but
-their fields carry no readable labels (`f1_1[0]`) — attaching semantic labels by
-position (à la CommonForms) and the open-ended "voice" answers are the roadmap.
+explainer**, and the **human approval step**.
+
+Real IRS PDFs carry no readable field labels (`topmostSubform[0].Page1[0].f1_1[0]`), so
+`demo-forms/prepare-forms.js` recovers a human caption for each field **by position**
+(reading page text with pdf.js and pairing it to each field box) and bakes it into the
+field tooltip — the "CommonForms-prepared AcroForm" step, done for real. The engine then
+reasons over those captions: it maps Italian labels, `Line 2a`, and "Decedent's TIN"
+correctly, and refuses to guess sensitive values. Open-ended **"voice"** answers
+(motivation letters, "describe your relationship to the applicant") are the roadmap.
 
 ## Security notes
 - The OpenAI key lives only in `server/.env` (gitignored) and never ships in the extension.

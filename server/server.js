@@ -9,8 +9,10 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 const PORT = process.env.PORT || 8787;
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// Beyond the Form uses an OpenAI-compatible proxy (handbook §5), not api.openai.com.
+const OPENAI_BASE_URL = (process.env.OPENAI_BASE_URL || "https://20.223.175.10.nip.io/v1").replace(/\/$/, "");
 
 if (!OPENAI_API_KEY) {
   console.warn("\n[Once] WARNING: OPENAI_API_KEY is not set in server/.env — /api/* calls will fail.\n");
@@ -86,7 +88,7 @@ function localMap(fields, profile = {}) {
 }
 
 async function callOpenAI(messages, { json = true } = {}) {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -226,7 +228,7 @@ app.post("/api/explain", async (req, res) => {
   }
 });
 
-app.get("/api/health", (_req, res) => res.json({ ok: true, model: MODEL, keyConfigured: !!OPENAI_API_KEY }));
+app.get("/api/health", (_req, res) => res.json({ ok: true, model: MODEL, baseUrl: OPENAI_BASE_URL, keyConfigured: !!OPENAI_API_KEY }));
 
 app.listen(PORT, () => {
   console.log(`\n[Once] backend on http://localhost:${PORT}  (model: ${MODEL}, key: ${OPENAI_API_KEY ? "set" : "MISSING"})\n`);

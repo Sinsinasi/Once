@@ -34,6 +34,7 @@ let pdfDoc = null;          // pdf-lib PDFDocument currently loaded
 let currentFields = [];     // [{id,label}]
 let currentResults = [];    // [{id,value,confidence,source,sensitive}]
 let currentFileName = "form.pdf";
+let currentTruncated = false;
 let mode = "pdf";           // "pdf" | "html"
 let htmlTabId = null;
 
@@ -46,6 +47,21 @@ function prettify(name) {
   s = s.replace(/\[\d+\]/g, "").replace(/[_\-]+/g, " ").trim();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+// Prefer the field's human tooltip (/TU) — real IRS forms have cryptic names but our
+// prepare-forms step bakes the positional caption into TU. Fall back to the name.
+function fieldLabel(field) {
+  try {
+    const v = field.acroField.dict.get(PDFLib.PDFName.of("TU"));
+    if (v && (v instanceof PDFLib.PDFString || v instanceof PDFLib.PDFHexString)) {
+      const t = v.decodeText().trim();
+      if (t) return t;
+    }
+  } catch { /* no tooltip */ }
+  return prettify(field.getName());
+}
+
+const MAX_FIELDS = 30; // keep the engine call snappy on big forms (1040 has 199 fields)
 
 async function api(path, body) {
   const res = await fetch(API_BASE + path, {
@@ -93,13 +109,20 @@ function renderVault() {
 async function handlePdfFile(file) {
   currentFileName = file.name || "form.pdf";
   const buf = await file.arrayBuffer();
-  pdfDoc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-  const form = pdfDoc.getForm();
-  const fields = form.getFields();
+  let fields;
+  try {
+    pdfDoc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    fields = pdfDoc.getForm().getFields();
+  } catch (e) {
+    showFormError("Once couldn't read this PDF's form fields — it may be an XFA or malformed form.");
+    return;
+  }
 
-  currentFields = fields
-    .filter((f) => f instanceof PDFLib.PDFTextField)
-    .map((f) => ({ id: f.getName(), label: prettify(f.getName()) }));
+  let textFields = fields.filter((f) => f instanceof PDFLib.PDFTextField);
+  const truncated = textFields.length > MAX_FIELDS;
+  if (truncated) textFields = textFields.slice(0, MAX_FIELDS); // document order ≈ page order
+  currentFields = textFields.map((f) => ({ id: f.getName(), label: fieldLabel(f) }));
+  currentTruncated = truncated;
 
   if (!currentFields.length) {
     showFormError("This PDF has no fillable text fields Once can read.");
@@ -179,6 +202,7 @@ async function fillCurrentPage() {
   if (!tab || !tab.id) return;
   htmlTabId = tab.id;
   mode = "html";
+  currentTruncated = false;
 
   const [{ result: fields }] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -198,7 +222,7 @@ async function fillCurrentPage() {
 async function runMapping(title) {
   $("formPanel").classList.remove("hidden");
   $("formName").textContent = title;
-  $("fillSummary").textContent = "Reading the form…";
+  $("fillSummary").textContent = "Once is reading and understanding the form…";
   $("reviewList").innerHTML = "";
   $("needEyes").textContent = "";
   $("receipt").classList.add("hidden");
@@ -213,6 +237,24 @@ async function runMapping(title) {
   }
   currentResults = data.results || [];
   renderReview(data.fallback);
+
+  // In live-page mode, fill the page immediately so the user watches it happen.
+  if (mode === "html") {
+    const n = await fillPageNow();
+    $("fillSummary").textContent =
+      (data.fallback ? "local fallback · " : "understood ") +
+      `${currentFields.length} fields · filled ${n} on this page`;
+  }
+}
+
+async function fillPageNow() {
+  if (htmlTabId == null) return 0;
+  const [{ result: n }] = await chrome.scripting.executeScript({
+    target: { tabId: htmlTabId },
+    func: fillFieldsInPage,
+    args: [currentResults],
+  });
+  return n || 0;
 }
 
 const rank = { red: 0, amber: 1, green: 2 };
@@ -225,7 +267,8 @@ function renderReview(fallback) {
   $("autofillBadge").textContent = `auto-filled ${filled}/${total}`;
   $("fillSummary").textContent =
     (fallback ? "local fallback · " : "understood ") + `${total} fields` +
-    (mode === "pdf" ? " in this PDF" : " on this page");
+    (mode === "pdf" ? " in this PDF" : " on this page") +
+    (currentTruncated ? ` (first ${MAX_FIELDS})` : "");
 
   const eyes = $("needEyes");
   if (needEyes === 0) {
@@ -246,7 +289,9 @@ function renderReview(fallback) {
   list.innerHTML = "";
   for (const r of rows) list.appendChild(fieldRow(r));
 
-  $("approveBtn").classList.toggle("hidden", mode !== "pdf");
+  const btn = $("approveBtn");
+  btn.classList.remove("hidden");
+  btn.textContent = mode === "pdf" ? "Approve & download filled PDF" : "Re-fill this page";
 }
 
 function fieldRow(r) {
@@ -305,16 +350,8 @@ async function pushSingleToPage(r) {
 }
 
 async function approve() {
-  if (mode === "pdf") {
-    await applyToPdf();
-  } else {
-    const [{ result: n }] = await chrome.scripting.executeScript({
-      target: { tabId: htmlTabId },
-      func: fillFieldsInPage,
-      args: [currentResults],
-    });
-    void n;
-  }
+  if (mode === "pdf") await applyToPdf();
+  else await fillPageNow();
   showReceipt();
 }
 
