@@ -92,7 +92,3 @@ field tooltip — the "CommonForms-prepared AcroForm" step, done for real. The e
 reasons over those captions: it maps Italian labels, `Line 2a`, and "Decedent's TIN"
 correctly, and refuses to guess sensitive values. Open-ended **"voice"** answers
 (motivation letters, "describe your relationship to the applicant") are the roadmap.
-
-## Security notes
-- The OpenAI key lives only in `server/.env` (gitignored) and never ships in the extension.
-- All demo data is fictional. Nothing is submitted without explicit human approval.
